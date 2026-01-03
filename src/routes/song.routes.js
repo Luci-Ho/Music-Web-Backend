@@ -10,11 +10,20 @@ import {
   getSongsByArtist,
   getHomeSongs,
   getNewestSongs,
+  createSong,
+  updateSong,
+  deleteSong,
 } from '../controllers/song.controller.js';
+import { authenticate } from '../middlewares/auth.js';
 
 const router = express.Router();
 //không thay đổi thứ tự route, tips: route cụ thể phải TRƯỚc route động
 router.get('/', getAllSongs);
+
+// protected create/update/delete
+router.post('/', authenticate, createSong);
+router.patch('/:id', authenticate, updateSong);
+router.delete('/:id', authenticate, deleteSong);
 
 // GET /api/songs/home
 router.get('/home', getHomeSongs);

@@ -38,6 +38,11 @@ const songSchema = new mongoose.Schema(
       musicVideoId: String,
     },
 
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
     viewCount: {
       type: Number,
       default: 0,

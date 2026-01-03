@@ -12,6 +12,12 @@ const userSchema = new mongoose.Schema(
 
     password: String,
     phone: String,
+    refreshToken: String,
+    role: {
+      type: String,
+      enum: ['admin', 'moderator', 'user'],
+      default: 'user',
+    },
 
     level: {
       type: mongoose.Schema.Types.ObjectId,
