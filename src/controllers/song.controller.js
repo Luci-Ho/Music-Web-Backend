@@ -9,51 +9,60 @@ import Genre from '../models/Genre.model.js';
  */
 export const getAllSongs = async (req, res) => {
   try {
-    const { q, tags, artist, genre, limit = 20, page = 1, sort } = req.query;
-    const filter = {};
+    const { q, artistId, genreId, limit = 20, page = 1, sort } = req.query;
+    const filter = { isActive: true };
 
     if (q) {
-      filter.$or = [
-        { title: { $regex: q, $options: 'i' } },
-      ];
-      // add artist name match
-      const artists = await Artist.find({ name: { $regex: q, $options: 'i' } });
-      if (artists.length) filter.$or.push({ artist: { $in: artists.map(a => a._id) } });
+      filter.title = { $regex: q, $options: 'i' };
     }
 
-    if (tags) {
-      const tagIds = tags.split(',').map(t => t.trim());
-      filter.tags = { $in: tagIds };
+    if (artistId && mongoose.Types.ObjectId.isValid(artistId)) {
+      filter.artistId = artistId;
     }
 
-    if (artist && Artist) {
-      if (mongoose.Types.ObjectId.isValid(artist)) filter.artist = artist;
-      else {
-        const a = await Artist.findOne({ name: { $regex: artist, $options: 'i' } });
-        if (a) filter.artist = a._id;
-      }
-    }
-
-    if (genre) {
-      if (mongoose.Types.ObjectId.isValid(genre)) filter.genre = genre;
-      else {
-        const g = await Genre.findOne({ title: { $regex: genre, $options: 'i' } });
-        if (g) filter.genre = g._id;
-      }
+    if (genreId && mongoose.Types.ObjectId.isValid(genreId)) {
+      filter.genreId = genreId;
     }
 
     const perPage = Math.min(100, Number(limit));
     const skip = (Math.max(1, Number(page)) - 1) * perPage;
 
-    let cursor = Song.find(filter).populate('artist album genre mood');
-    if (sort === 'views') cursor = cursor.sort({ viewCount: -1 });
-    else cursor = cursor.sort({ createdAt: -1 });
+    let query = Song.find(filter)
+      .populate('artistId', '_id legacyId')
+      .populate('albumId', '_id legacyId')
+      .populate('genreId', '_id legacyId')
+      .populate('moodId', '_id legacyId');
+
+    if (sort === 'views') query = query.sort({ viewCount: -1 });
+    else if (sort === 'newest') query = query.sort({ releaseDate: -1 });
+    else query = query.sort({ createdAt: -1 });
 
     const total = await Song.countDocuments(filter);
-    const songs = await cursor.skip(skip).limit(perPage);
+    const data = await query.skip(skip).limit(perPage).lean();
 
-    res.status(200).json({ meta: { total, page: Number(page), perPage }, data: songs });
-  } catch (error) {
+    // Rút gọn thủ công để chắc chắn chỉ còn _id + legacyId
+    const simplified = data.map(song => ({
+      ...song,
+      artistId: song.artistId && {
+        _id: song.artistId._id,
+        legacyId: song.artistId.legacyId,
+      },
+      albumId: song.albumId && {
+        _id: song.albumId._id,
+        legacyId: song.albumId.legacyId,
+      },
+      genreId: song.genreId && {
+        _id: song.genreId._id,
+        legacyId: song.genreId.legacyId,
+      },
+      moodId: song.moodId && {
+        _id: song.moodId._id,
+        legacyId: song.moodId.legacyId,
+      },
+    }));
+
+    res.json({ meta: { total, page: Number(page), perPage }, data: simplified });
+  } catch (err) {
     res.status(500).json({ message: 'Failed to fetch songs' });
   }
 };
@@ -77,7 +86,22 @@ export const getFeaturedSongs = async (req, res) => {
  */
 export const getSongById = async (req, res) => {
   try {
-    const song = await Song.findById(req.params.id).populate('artist album genre mood');
+    const { id } = req.params;
+
+    // kiểm tra id có phải ObjectId hợp lệ không
+    const isObjectId = mongoose.Types.ObjectId.isValid(id);
+
+    const song = isObjectId
+      ? await Song.findById(id)
+        .populate('artistId', '_id legacyId')
+        .populate('albumId', '_id legacyId')
+        .populate('genreId', '_id legacyId')
+        .populate('moodId', '_id legacyId')
+      : await Song.findOne({ legacyId: id })
+        .populate('artistId', '_id legacyId')
+        .populate('albumId', '_id legacyId')
+        .populate('genreId', '_id legacyId')
+        .populate('moodId', '_id legacyId');
 
     if (!song) {
       return res.status(404).json({ message: 'Song not found' });
@@ -93,14 +117,19 @@ export const getSongById = async (req, res) => {
   }
 };
 
+
 /**
  * GET /api/songs/genre/:genre
  * Lấy bài hát theo thể loại
+ * query theo _id
  */
 export const getSongsByGenre = async (req, res) => {
   try {
-    const genre = req.params.genre;
-    const songs = await Song.find({ genre });
+    const { genre } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(genre)) {
+      return res.status(400).json({ message: 'Invalid genre id' });
+    }
+    const songs = await Song.find({ genreId: genre });
 
     res.status(200).json(songs);
   } catch (error) {
@@ -124,9 +153,10 @@ export const searchSongs = async (req, res) => {
     const songs = await Song.find({
       $or: [
         { title: { $regex: q, $options: 'i' } },
-        { artist: { $regex: q, $options: 'i' } },
+        { artistId: { $in: artistIds } },
       ],
-    });
+    }).populate('artistId', '_id legacyId');
+
 
     res.status(200).json(songs);
   } catch (error) {
@@ -142,16 +172,19 @@ export const getTopSongs = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
 
-    const songs = await Song.find()
+    const songs = await Song.find({ isActive: true })
       .sort({ viewCount: -1 })
       .limit(limit)
-      .populate('artist album genre mood');
+      .populate('artistId', '_id legacyId')
+      .populate('albumId', '_id legacyId')
 
-    res.status(200).json(songs);
-  } catch (error) {
+
+    res.json(songs);
+  } catch {
     res.status(500).json({ message: 'Failed to fetch top songs' });
   }
 };
+
 
 /**
  * GET /api/songs/year/:year
@@ -161,28 +194,31 @@ export const getSongsByYear = async (req, res) => {
   try {
     const year = Number(req.params.year);
 
-    const startDate = new Date(`${year}-01-01T00:00:00.000Z`);
-    const endDate = new Date(`${year + 1}-01-01T00:00:00.000Z`);
+    const start = new Date(`${year}-01-01T00:00:00.000Z`);
+    const end = new Date(`${year + 1}-01-01T00:00:00.000Z`);
 
     const songs = await Song.find({
-      releaseDate: {
-        $gte: startDate,
-        $lt: endDate,
-      },
-    }).populate('artist album genre mood');
+      releaseDate: { $gte: start, $lt: end },
+      isActive: true,
+    })
+      .populate('artistId', '_id legacyId')
+      .populate('albumId', '_id legacyId')
 
-    res.status(200).json(songs);
-  } catch (error) {
+
+    res.json(songs);
+  } catch {
     res.status(500).json({ message: 'Failed to fetch songs by year' });
   }
 };
 
+
 export const getSongsByArtist = async (req, res) => {
   try {
-    const artist = req.params.artist;
-    const songs = await Song.find({
-      artist: { $regex: artist, $options: 'i' },
-    });
+    const { artist } = req.params;
+    const artists = await Artist.find({ name: { $regex: artist, $options: 'i' } });
+    const artistIds = artists.map(a => a._id);
+    const songs = await Song.find({ artistId: { $in: artistIds } });
+
 
     res.json(songs);
   } catch {
@@ -194,9 +230,13 @@ export const getSongsByArtist = async (req, res) => {
 export const getNewestSongs = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
-    const songs = await Song.find()
-      .sort({ release_date: -1 })
-      .limit(limit);
+
+    const songs = await Song.find({ isActive: true })
+      .sort({ releaseDate: -1 })
+      .limit(limit)
+      .populate('artistId', '_id legacyId')
+      .populate('albumId', '_id legacyId')
+
 
     res.json(songs);
   } catch {
@@ -205,12 +245,20 @@ export const getNewestSongs = async (req, res) => {
 };
 
 
+
 export const getHomeSongs = async (req, res) => {
   try {
     const [newest, featured, top] = await Promise.all([
-      Song.find().sort({ release_date: -1 }).limit(5),
-      Song.find({ isFeatured: true }).limit(5),
-      Song.find().sort({ viewCount: -1 }).limit(5),
+      Song.find({ isActive: true })
+        .sort({ releaseDate: -1 })
+        .limit(5),
+
+      Song.find({ isFeatured: true, isActive: true })
+        .limit(5),
+
+      Song.find({ isActive: true })
+        .sort({ viewCount: -1 })
+        .limit(5),
     ]);
 
     res.json({ newest, featured, top });
@@ -218,6 +266,7 @@ export const getHomeSongs = async (req, res) => {
     res.status(500).json({ message: 'Failed to load home data' });
   }
 };
+
 
 /**
  * POST /api/songs
@@ -230,7 +279,12 @@ export const createSong = async (req, res) => {
     const song = new Song(payload);
     if (req.user) song.createdBy = req.user._id;
     await song.save();
-    const populated = await Song.findById(song._id).populate('artist album genre mood');
+    const populated = await Song.findById(song._id)
+      .populate('artistId', '_id legacyId')
+      .populate('albumId', '_id legacyId')
+      .populate('genreId', '_id legacyId')
+      .populate('moodId', '_id legacyId');
+
     res.status(201).json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -255,7 +309,13 @@ export const updateSong = async (req, res) => {
 
     Object.assign(song, updates);
     await song.save();
-    const populated = await Song.findById(song._id).populate('artist album genre mood');
+    const populated = await Song.findById(song._id)
+      .populate('artistId', '_id legacyId')
+      .populate('albumId', '_id legacyId')
+      .populate('genreId', '_id legacyId')
+      .populate('moodId', '_id legacyId');
+
+
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });

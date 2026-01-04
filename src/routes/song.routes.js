@@ -23,8 +23,8 @@ const router = express.Router();
 router.get('/', getAllSongs);
 
 // protected create/update/delete
-router.post('/', authenticate, createSong);
-router.patch('/:id', authenticate, updateSong);
+// router.post('/', authenticate, createSong);
+// router.patch('/:id', authenticate, updateSong);
 router.delete('/:id', authenticate, deleteSong);
 // validation
 router.post('/', authenticate, validate(createSongSchema), createSong);

@@ -1,7 +1,15 @@
 import mongoose from "mongoose";
 
 const albumSchema = new mongoose.Schema(
+  
   {
+     // 🔁 ID cũ từ db.json (s502...)
+    legacyId: {
+      type: String,
+      index: true,
+      unique: true,
+    },
+    
     title: {
       type: String,
       required: true,
