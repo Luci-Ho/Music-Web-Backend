@@ -5,7 +5,7 @@ import Album from '../models/Album.model.js';
 import Genre from '../models/Genre.model.js';
 import Mood from '../models/Mood.model.js';
 import dotenv from 'dotenv';
-
+//lien ket id voi _id, sau nay update thi khong can push them id, de _id tu sinh
 dotenv.config();
 
 await mongoose.connect(process.env.MONGO_URI);
@@ -43,3 +43,4 @@ const migrate = async () => {
 };
 
 migrate();
+
