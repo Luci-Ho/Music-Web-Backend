@@ -7,23 +7,23 @@ const songSchema = new mongoose.Schema(
       required: true,
     },
 
-    artist: {
+    artistId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Artist",
       required: true,
     },
 
-    album: {
+    albumId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Album",
     },
 
-    genre: {
+    genreId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Genre",
     },
 
-    mood: {
+    moodId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Mood",
     },
@@ -42,7 +42,7 @@ const songSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
-    tags: [
+    tagsId: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Tag',

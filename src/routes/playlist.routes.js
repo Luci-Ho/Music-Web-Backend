@@ -9,15 +9,13 @@ import {
   removeSongFromPlaylist,
 } from '../controllers/playlist.controller.js';
 import { authenticate } from '../middlewares/auth.js';
-import validate from '../middlewares/validate.js';
-import { createPlaylistSchema, updatePlaylistSchema } from '../validation/playlist.schema.js';
 
 const router = express.Router();
 
-router.post('/', authenticate, validate(createPlaylistSchema), createPlaylist);
+router.post('/', authenticate, createPlaylist);
 router.get('/me', authenticate, getUserPlaylists);
 router.get('/:id', getPlaylist);
-router.patch('/:id', authenticate, validate(updatePlaylistSchema), updatePlaylist);
+router.patch('/:id', authenticate, updatePlaylist);
 router.delete('/:id', authenticate, deletePlaylist);
 router.post('/:id/songs', authenticate, addSongToPlaylist);
 router.delete('/:id/songs', authenticate, removeSongFromPlaylist);

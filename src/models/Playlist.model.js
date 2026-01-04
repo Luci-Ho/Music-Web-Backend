@@ -7,7 +7,7 @@ const PlaylistSchema = new mongoose.Schema({
 	ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 	coverImage: { type: String, default: null },
 	isPublic: { type: Boolean, default: false },
-	songs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
+	songsId: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
 	likes: { type: Number, default: 0 }
 }, { timestamps: true });
 
