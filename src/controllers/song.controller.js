@@ -100,13 +100,7 @@ export const getSongById = async (req, res) => {
 export const getSongsByGenre = async (req, res) => {
   try {
     const genre = req.params.genre;
-    let genreId = genre;
-    if (!mongoose.Types.ObjectId.isValid(genre)) {
-      const g = await Genre.findOne({ title: { $regex: genre, $options: 'i' } });
-      genreId = g ? g._id : null;
-    }
-    const query = genreId ? { genre: genreId } : { 'genre.title': { $regex: genre, $options: 'i' } };
-    const songs = await Song.find(query).populate('artist album genre mood');
+    const songs = await Song.find({ genre });
 
     res.status(200).json(songs);
   } catch (error) {
@@ -130,9 +124,9 @@ export const searchSongs = async (req, res) => {
     const songs = await Song.find({
       $or: [
         { title: { $regex: q, $options: 'i' } },
-        { artist: { $in: artistIds } },
+        { artist: { $regex: q, $options: 'i' } },
       ],
-    }).populate('artist album genre mood');
+    });
 
     res.status(200).json(songs);
   } catch (error) {
@@ -186,15 +180,9 @@ export const getSongsByYear = async (req, res) => {
 export const getSongsByArtist = async (req, res) => {
   try {
     const artist = req.params.artist;
-    let artistId = artist;
-    if (!mongoose.Types.ObjectId.isValid(artist)) {
-      const a = await Artist.findOne({ name: { $regex: artist, $options: 'i' } });
-      artistId = a ? a._id : null;
-    }
-
-    if (!artistId) return res.status(200).json([]);
-
-    const songs = await Song.find({ artist: artistId }).populate('artist album genre mood');
+    const songs = await Song.find({
+      artist: { $regex: artist, $options: 'i' },
+    });
 
     res.json(songs);
   } catch {
@@ -202,13 +190,13 @@ export const getSongsByArtist = async (req, res) => {
   }
 };
 
+
 export const getNewestSongs = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const songs = await Song.find()
-      .sort({ releaseDate: -1 })
-      .limit(limit)
-      .populate('artist album genre mood');
+      .sort({ release_date: -1 })
+      .limit(limit);
 
     res.json(songs);
   } catch {
@@ -220,9 +208,9 @@ export const getNewestSongs = async (req, res) => {
 export const getHomeSongs = async (req, res) => {
   try {
     const [newest, featured, top] = await Promise.all([
-      Song.find().sort({ releaseDate: -1 }).limit(5).populate('artist album genre mood'),
-      Song.find({ isFeatured: true }).limit(5).populate('artist album genre mood'),
-      Song.find().sort({ viewCount: -1 }).limit(5).populate('artist album genre mood'),
+      Song.find().sort({ release_date: -1 }).limit(5),
+      Song.find({ isFeatured: true }).limit(5),
+      Song.find().sort({ viewCount: -1 }).limit(5),
     ]);
 
     res.json({ newest, featured, top });
