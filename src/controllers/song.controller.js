@@ -1,4 +1,7 @@
-import Song from '../models/Song.js';
+import mongoose from 'mongoose';
+import Song from '../models/Song.model.js';
+import Artist from '../models/Artist.model.js';
+import Genre from '../models/Genre.model.js';
 
 /**
  * GET /api/songs
@@ -6,8 +9,50 @@ import Song from '../models/Song.js';
  */
 export const getAllSongs = async (req, res) => {
   try {
-    const songs = await Song.find().sort({ createdAt: -1 });
-    res.status(200).json(songs);
+    const { q, tags, artist, genre, limit = 20, page = 1, sort } = req.query;
+    const filter = {};
+
+    if (q) {
+      filter.$or = [
+        { title: { $regex: q, $options: 'i' } },
+      ];
+      // add artist name match
+      const artists = await Artist.find({ name: { $regex: q, $options: 'i' } });
+      if (artists.length) filter.$or.push({ artist: { $in: artists.map(a => a._id) } });
+    }
+
+    if (tags) {
+      const tagIds = tags.split(',').map(t => t.trim());
+      filter.tags = { $in: tagIds };
+    }
+
+    if (artist && Artist) {
+      if (mongoose.Types.ObjectId.isValid(artist)) filter.artist = artist;
+      else {
+        const a = await Artist.findOne({ name: { $regex: artist, $options: 'i' } });
+        if (a) filter.artist = a._id;
+      }
+    }
+
+    if (genre) {
+      if (mongoose.Types.ObjectId.isValid(genre)) filter.genre = genre;
+      else {
+        const g = await Genre.findOne({ title: { $regex: genre, $options: 'i' } });
+        if (g) filter.genre = g._id;
+      }
+    }
+
+    const perPage = Math.min(100, Number(limit));
+    const skip = (Math.max(1, Number(page)) - 1) * perPage;
+
+    let cursor = Song.find(filter).populate('artist album genre mood');
+    if (sort === 'views') cursor = cursor.sort({ viewCount: -1 });
+    else cursor = cursor.sort({ createdAt: -1 });
+
+    const total = await Song.countDocuments(filter);
+    const songs = await cursor.skip(skip).limit(perPage);
+
+    res.status(200).json({ meta: { total, page: Number(page), perPage }, data: songs });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch songs' });
   }
@@ -32,14 +77,14 @@ export const getFeaturedSongs = async (req, res) => {
  */
 export const getSongById = async (req, res) => {
   try {
-    const song = await Song.findById(req.params.id);
+    const song = await Song.findById(req.params.id).populate('artist album genre mood');
 
     if (!song) {
       return res.status(404).json({ message: 'Song not found' });
     }
 
     // tăng view
-    song.viewCount += 1;
+    song.viewCount = (song.viewCount || 0) + 1;
     await song.save();
 
     res.status(200).json(song);
@@ -54,7 +99,8 @@ export const getSongById = async (req, res) => {
  */
 export const getSongsByGenre = async (req, res) => {
   try {
-    const songs = await Song.find({ genreId: req.params.genre });
+    const genre = req.params.genre;
+    const songs = await Song.find({ genre });
 
     res.status(200).json(songs);
   } catch (error) {
@@ -69,11 +115,18 @@ export const getSongsByGenre = async (req, res) => {
 export const searchSongs = async (req, res) => {
   try {
     const q = req.query.q;
+    if (!q) return res.status(200).json([]);
+
+    // search by title or artist name
+    const artists = await Artist.find({ name: { $regex: q, $options: 'i' } });
+    const artistIds = artists.map(a => a._id);
 
     const songs = await Song.find({
-      title: { $regex: q, $options: 'i' },
+      $or: [
+        { title: { $regex: q, $options: 'i' } },
+        { artist: { $regex: q, $options: 'i' } },
+      ],
     });
-
 
     res.status(200).json(songs);
   } catch (error) {
@@ -91,7 +144,8 @@ export const getTopSongs = async (req, res) => {
 
     const songs = await Song.find()
       .sort({ viewCount: -1 })
-      .limit(limit);
+      .limit(limit)
+      .populate('artist album genre mood');
 
     res.status(200).json(songs);
   } catch (error) {
@@ -115,7 +169,7 @@ export const getSongsByYear = async (req, res) => {
         $gte: startDate,
         $lt: endDate,
       },
-    });
+    }).populate('artist album genre mood');
 
     res.status(200).json(songs);
   } catch (error) {
@@ -125,8 +179,9 @@ export const getSongsByYear = async (req, res) => {
 
 export const getSongsByArtist = async (req, res) => {
   try {
+    const artist = req.params.artist;
     const songs = await Song.find({
-      artistId: req.params.artistId,
+      artist: { $regex: artist, $options: 'i' },
     });
 
     res.json(songs);
@@ -140,7 +195,7 @@ export const getNewestSongs = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const songs = await Song.find()
-      .sort({ releaseDate: -1 })
+      .sort({ release_date: -1 })
       .limit(limit);
 
     res.json(songs);
@@ -153,7 +208,7 @@ export const getNewestSongs = async (req, res) => {
 export const getHomeSongs = async (req, res) => {
   try {
     const [newest, featured, top] = await Promise.all([
-      Song.find().sort({ releaseDate: -1 }).limit(5),
+      Song.find().sort({ release_date: -1 }).limit(5),
       Song.find({ isFeatured: true }).limit(5),
       Song.find().sort({ viewCount: -1 }).limit(5),
     ]);
@@ -161,6 +216,69 @@ export const getHomeSongs = async (req, res) => {
     res.json({ newest, featured, top });
   } catch {
     res.status(500).json({ message: 'Failed to load home data' });
+  }
+};
+
+/**
+ * POST /api/songs
+ * Tạo mới bài hát
+ */
+export const createSong = async (req, res) => {
+  try {
+    const payload = req.body;
+    // allow media upload handled elsewhere; accept artist/album as ids
+    const song = new Song(payload);
+    if (req.user) song.createdBy = req.user._id;
+    await song.save();
+    const populated = await Song.findById(song._id).populate('artist album genre mood');
+    res.status(201).json(populated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * PATCH /api/songs/:id
+ * Cập nhật bài hát
+ */
+export const updateSong = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const song = await Song.findById(id);
+    if (!song) return res.status(404).json({ message: 'Song not found' });
+
+    // optional: only creator or admin can update
+    if (req.user && song.createdBy && song.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    Object.assign(song, updates);
+    await song.save();
+    const populated = await Song.findById(song._id).populate('artist album genre mood');
+    res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * DELETE /api/songs/:id
+ */
+export const deleteSong = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const song = await Song.findById(id);
+    if (!song) return res.status(404).json({ message: 'Song not found' });
+
+    if (req.user && song.createdBy && song.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    await song.remove();
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
