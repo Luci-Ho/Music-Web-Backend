@@ -20,7 +20,7 @@ router.get('/', getAllSongs);
 router.get('/home', getHomeSongs);
 router.get('/new', getNewestSongs);
 
-router.get('/artist/:artist', getSongsByArtist);
+router.get('/artist/:artistId', getSongsByArtist);
 
 
 router.get('/featured', getFeaturedSongs);
@@ -28,7 +28,7 @@ router.get('/top', getTopSongs);
 router.get('/search', searchSongs);
 
 router.get('/year/:year', getSongsByYear);
-router.get('/genre/:genre', getSongsByGenre);
+router.get('/genre/:genreId', getSongsByGenre);
 
 
 router.get('/:id', getSongById); // 🚨 LUÔN ĐỂ CUỐI

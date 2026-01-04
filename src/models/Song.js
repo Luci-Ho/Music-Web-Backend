@@ -1,77 +1,100 @@
 import mongoose from 'mongoose';
 
-const streamingLinksSchema = new mongoose.Schema(
-  {
-    audio_url: {
-      type: String,
-      required: true,
-    },
-  },
-  { _id: false }
-);
-
 const songSchema = new mongoose.Schema(
   {
+    // ID cũ từ dbjson (s501, s502...)
+    legacyId: {
+      type: String,
+      index: true,
+    },
+
     title: {
       type: String,
       required: true,
       trim: true,
     },
 
-    artist: {
-      type: String,
+    // 👉 GIỮ artistId (KHÔNG dùng artist)
+    artistId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Artist',
       required: true,
-      trim: true,
-    },
-
-    artist_avatar: {
-      type: String,
-    },
-
-    cover_url: {
-      type: String,
-    },
-
-    album: {
-      type: String,
-    },
-
-    release_date: {
-      type: Date,
-    },
-
-    duration: {
-      type: String, // "3:45"
-    },
-
-    genre: {
-      type: String,
       index: true,
     },
 
-    video_url: {
-      type: String,
+    albumId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Album',
+      index: true,
+    },
+
+    genreId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Genre',
+      index: true,
+    },
+
+    moodId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Mood',
+      index: true,
+    },
+
+    musicVideoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MusicVideo',
+      index: true,
+    },
+
+    duration: {
+      type: String, // "4:23"
+    },
+
+    // ✅ DÙNG DATE (backend đã viết đúng)
+    releaseDate: {
+      type: Date,
+      index: true,
     },
 
     lyrics: {
       type: String,
     },
 
-    streaming_links: streamingLinksSchema,
+    // 👉 GIỮ THEO DATA CŨ
+    img: {
+      type: String,
+    },
+
+    streaming_links: {
+      audio_url: {
+        type: String,
+        required: true,
+      },
+    },
+
+    viewCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
 
     isFeatured: {
       type: Boolean,
       default: false,
     },
 
-    viewCount: {
-      type: Number,
-      default: 0,
-      index:true, //
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // createdAt, updatedAt
   }
 );
 

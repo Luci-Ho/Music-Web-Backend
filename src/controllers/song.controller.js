@@ -54,8 +54,7 @@ export const getSongById = async (req, res) => {
  */
 export const getSongsByGenre = async (req, res) => {
   try {
-    const genre = req.params.genre;
-    const songs = await Song.find({ genre });
+    const songs = await Song.find({ genreId: req.params.genre });
 
     res.status(200).json(songs);
   } catch (error) {
@@ -72,11 +71,9 @@ export const searchSongs = async (req, res) => {
     const q = req.query.q;
 
     const songs = await Song.find({
-      $or: [
-        { title: { $regex: q, $options: 'i' } },
-        { artist: { $regex: q, $options: 'i' } },
-      ],
+      title: { $regex: q, $options: 'i' },
     });
+
 
     res.status(200).json(songs);
   } catch (error) {
@@ -114,7 +111,7 @@ export const getSongsByYear = async (req, res) => {
     const endDate = new Date(`${year + 1}-01-01T00:00:00.000Z`);
 
     const songs = await Song.find({
-      release_date: {
+      releaseDate: {
         $gte: startDate,
         $lt: endDate,
       },
@@ -128,9 +125,8 @@ export const getSongsByYear = async (req, res) => {
 
 export const getSongsByArtist = async (req, res) => {
   try {
-    const artist = req.params.artist;
     const songs = await Song.find({
-      artist: { $regex: artist, $options: 'i' },
+      artistId: req.params.artistId,
     });
 
     res.json(songs);
@@ -139,11 +135,12 @@ export const getSongsByArtist = async (req, res) => {
   }
 };
 
+
 export const getNewestSongs = async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const songs = await Song.find()
-      .sort({ release_date: -1 })
+      .sort({ releaseDate: -1 })
       .limit(limit);
 
     res.json(songs);
@@ -156,7 +153,7 @@ export const getNewestSongs = async (req, res) => {
 export const getHomeSongs = async (req, res) => {
   try {
     const [newest, featured, top] = await Promise.all([
-      Song.find().sort({ release_date: -1 }).limit(5),
+      Song.find().sort({ releaseDate: -1 }).limit(5),
       Song.find({ isFeatured: true }).limit(5),
       Song.find().sort({ viewCount: -1 }).limit(5),
     ]);
