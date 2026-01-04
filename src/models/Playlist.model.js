@@ -4,10 +4,10 @@ const PlaylistSchema = new mongoose.Schema({
 	playlistId: { type: String, required: true, unique: true },
 	name: { type: String, required: true },
 	description: { type: String, default: '' },
-	ownerId: { type: String, required: true },
+	ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 	coverImage: { type: String, default: null },
 	isPublic: { type: Boolean, default: false },
-	songs: [{ type: String }],
+	songs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
 	likes: { type: Number, default: 0 }
 }, { timestamps: true });
 

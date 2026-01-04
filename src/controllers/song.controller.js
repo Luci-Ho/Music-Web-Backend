@@ -9,8 +9,50 @@ import Genre from '../models/Genre.model.js';
  */
 export const getAllSongs = async (req, res) => {
   try {
-    const songs = await Song.find().sort({ createdAt: -1 }).populate('artist album genre mood');
-    res.status(200).json(songs);
+    const { q, tags, artist, genre, limit = 20, page = 1, sort } = req.query;
+    const filter = {};
+
+    if (q) {
+      filter.$or = [
+        { title: { $regex: q, $options: 'i' } },
+      ];
+      // add artist name match
+      const artists = await Artist.find({ name: { $regex: q, $options: 'i' } });
+      if (artists.length) filter.$or.push({ artist: { $in: artists.map(a => a._id) } });
+    }
+
+    if (tags) {
+      const tagIds = tags.split(',').map(t => t.trim());
+      filter.tags = { $in: tagIds };
+    }
+
+    if (artist && Artist) {
+      if (mongoose.Types.ObjectId.isValid(artist)) filter.artist = artist;
+      else {
+        const a = await Artist.findOne({ name: { $regex: artist, $options: 'i' } });
+        if (a) filter.artist = a._id;
+      }
+    }
+
+    if (genre) {
+      if (mongoose.Types.ObjectId.isValid(genre)) filter.genre = genre;
+      else {
+        const g = await Genre.findOne({ title: { $regex: genre, $options: 'i' } });
+        if (g) filter.genre = g._id;
+      }
+    }
+
+    const perPage = Math.min(100, Number(limit));
+    const skip = (Math.max(1, Number(page)) - 1) * perPage;
+
+    let cursor = Song.find(filter).populate('artist album genre mood');
+    if (sort === 'views') cursor = cursor.sort({ viewCount: -1 });
+    else cursor = cursor.sort({ createdAt: -1 });
+
+    const total = await Song.countDocuments(filter);
+    const songs = await cursor.skip(skip).limit(perPage);
+
+    res.status(200).json({ meta: { total, page: Number(page), perPage }, data: songs });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch songs' });
   }
