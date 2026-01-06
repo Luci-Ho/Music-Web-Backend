@@ -1,99 +1,69 @@
-import mongoose from 'mongoose';
+import mongoose from 'mongoose'
 
-const mediaSchema = new mongoose.Schema(
+const SongSchema = new mongoose.Schema(
   {
-    image: {
-      type: String,
-    },
-    audioUrl: {
-      type: String,
-      required: true,
-    },
-    videoUrl: {
-      type: String,
-    },
-  },
-  { _id: false }
-);
-
-const songSchema = new mongoose.Schema(
-  {
-    // 🔁 ID cũ từ db.json (s502...)
     legacyId: {
       type: String,
+      required: true,
       index: true,
-      unique: true,
+      unique: true
     },
 
     title: {
       type: String,
-      required: true,
-      trim: true,
+      required: true
     },
 
-    // 🔗 LIÊN KẾT (giữ dạng Id cho đúng data cũ)
     artistId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Artist',
-      required: true,
-      index: true,
+      required: true
     },
 
     albumId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Album',
-      index: true,
+      default: null //không phải bài hát nào cũng có album
     },
 
     genreId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Genre',
-      index: true,
+      required: false
     },
 
     moodId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Mood',
-      index: true,
+      required: false
     },
 
-    // 📅 chuẩn Date (bạn đã đồng ý đổi)
     releaseDate: {
-      type: Date,
-      index: true,
+      type: Date
     },
 
-    duration: {
-      type: String, // "3:24"
-    },
+    duration: String,
+    lyrics: String,
 
-    lyrics: {
-      type: String,
-    },
-
-    media: mediaSchema,
-
-    viewCount: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
-
-    isFeatured: {
-      type: Boolean,
-      default: false,
+    media: {
+      image: String,
+      audioUrl: String,
+      videoUrl: String
     },
 
     isActive: {
       type: Boolean,
-      default: true,
+      default: true
     },
+    isFeatured: { type: Boolean, default: false },
+
+    viewCount: {
+      type: Number,
+      default: 0
+    }
   },
-  {
-    collection: 'songs', // 👈 QUAN TRỌNG NHẤT
 
-    timestamps: true, // createdAt, updatedAt
-  }
-);
+  { timestamps: true }
+)
 
-export default mongoose.model('Song', songSchema);
+export default mongoose.model('Song', SongSchema)
