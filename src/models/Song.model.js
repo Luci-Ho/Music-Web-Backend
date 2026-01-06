@@ -1,11 +1,28 @@
 import mongoose from 'mongoose';
 
+const mediaSchema = new mongoose.Schema(
+  {
+    image: {
+      type: String,
+    },
+    audioUrl: {
+      type: String,
+      required: true,
+    },
+    videoUrl: {
+      type: String,
+    },
+  },
+  { _id: false }
+);
+
 const songSchema = new mongoose.Schema(
   {
-    // ID cũ từ dbjson (s501, s502...)
+    // 🔁 ID cũ từ db.json (s502...)
     legacyId: {
       type: String,
       index: true,
+      unique: true,
     },
 
     title: {
@@ -14,7 +31,7 @@ const songSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // 👉 GIỮ artistId (KHÔNG dùng artist)
+    // 🔗 LIÊN KẾT (giữ dạng Id cho đúng data cũ)
     artistId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Artist',
@@ -40,37 +57,21 @@ const songSchema = new mongoose.Schema(
       index: true,
     },
 
-    musicVideoId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'MusicVideo',
+    // 📅 chuẩn Date (bạn đã đồng ý đổi)
+    releaseDate: {
+      type: Date,
       index: true,
     },
 
     duration: {
-      type: String, // "4:23"
-    },
-
-    // ✅ DÙNG DATE (backend đã viết đúng)
-    releaseDate: {
-      type: Date,
-      index: true,
+      type: String, // "3:24"
     },
 
     lyrics: {
       type: String,
     },
 
-    // 👉 GIỮ THEO DATA CŨ
-    img: {
-      type: String,
-    },
-
-    streaming_links: {
-      audio_url: {
-        type: String,
-        required: true,
-      },
-    },
+    media: mediaSchema,
 
     viewCount: {
       type: Number,
@@ -87,20 +88,10 @@ const songSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    },
-
-    tags: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tag',
-      },
-    ],
   },
   {
+    collection: 'songs', // 👈 QUAN TRỌNG NHẤT
+
     timestamps: true, // createdAt, updatedAt
   }
 );
