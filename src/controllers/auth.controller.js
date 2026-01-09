@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.model.js';
-import Level from '../models/Level.model.js';
+// import Level from '../models/Level.model.js';
 
 const genAccessToken = (user) =>
   jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -13,22 +13,32 @@ const genRefreshToken = (user) =>
     expiresIn: '7d',
   });
 
+
+
 export const signup = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    const { username, email, password, phone } = req.body;
+    // console.log('HEADERS:', req.headers['content-type']);
+    // console.log('BODY:', req.body);
+
+
+    if (!email || !password || !phone) {
+      return res.status(400).json({ message: 'Email, mật khẩu và số điện thoại là bắt buộc' });
+    }
 
     const existing = await User.findOne({ email });
-    if (existing) return res.status(409).json({ message: 'Email already in use' });
+    if (existing) {
+      return res.status(409).json({ message: 'Email đã được sử dụng' });
+    }
 
-    const defaultLevel = await Level.findOne({ name: 'User' });
     const passwordHash = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       username,
       email,
+      phone,
       password: passwordHash,
-      level: defaultLevel ? defaultLevel._id : undefined,
+      role: 'user', // listener mặc định
     });
 
     const accessToken = genAccessToken(user);
@@ -37,22 +47,33 @@ export const signup = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    res.status(201).json({ user: { id: user._id, email: user.email, username: user.username }, accessToken, refreshToken });
+    res.status(201).json({
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+      accessToken,
+      refreshToken,
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    if (!email || !password) return res.status(400).json({ message: 'Sai Email hoặc mật khẩu' });
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) return res.status(401).json({ message: 'Sai Email hoặc mật khẩu' });
 
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!ok) return res.status(401).json({ message: 'Sai Email hoặc mật khẩu' });
 
     const accessToken = genAccessToken(user);
     const refreshToken = genRefreshToken(user);
@@ -68,16 +89,16 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   try {
     const { token } = req.body;
-    if (!token) return res.status(400).json({ message: 'Refresh token required' });
+    if (!token) return res.status(400).json({ message: 'Refresh' });
 
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(payload.id);
-    if (!user || user.refreshToken !== token) return res.status(401).json({ message: 'Invalid refresh token' });
+    if (!user || user.refreshToken !== token) return res.status(401).json({ message: 'không có quyền đăng nhập' });
 
     const accessToken = genAccessToken(user);
     res.json({ accessToken });
   } catch (err) {
-    res.status(401).json({ message: 'Invalid refresh token' });
+    res.status(401).json({ message: 'không có quyền đăng nhập' });
   }
 };
 
