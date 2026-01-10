@@ -2,36 +2,47 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-
-     // 🔁 ID cũ từ db.json (s502...)
     legacyId: {
       type: String,
       index: true,
       unique: true,
     },
-    
-    username: String,
+
+    username: {
+      type: String,
+      required: true,
+    },
 
     email: {
       type: String,
       unique: true,
       sparse: true,
+      required: true,
     },
 
-    password: String,
-    phone: String,
-    refreshToken: String,
+    password: {
+      type: String,
+      required: true,
+      select: false,
+    },
+
+    phone: {
+      type: String,
+      required: true
+    },
+
     role: {
       type: String,
       enum: ['admin', 'moderator', 'user'],
       default: 'user',
+      index: true,
     },
 
-    level: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Level",
-      required: true,
-    },
+    // // ⭐ optional – dùng sau
+    // level: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Level",
+    // },
 
     favorites: [
       {
@@ -46,6 +57,8 @@ const userSchema = new mongoose.Schema(
         ref: "Playlist",
       },
     ],
+
+    refreshToken: String,
   },
   { timestamps: true }
 );

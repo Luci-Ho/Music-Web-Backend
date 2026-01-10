@@ -1,46 +1,104 @@
-import mongoose from 'mongoose';
-import Song from '../models/Song.model.js';
-import Artist from '../models/Artist.model.js';
-import Album from '../models/Album.model.js';
-import Genre from '../models/Genre.model.js';
-import Mood from '../models/Mood.model.js';
+import mongoose from 'mongoose'
 import dotenv from 'dotenv';
-//lien ket id voi _id, sau nay update thi khong can push them id, de _id tu sinh
+import fs from 'fs'
+
+import Artist from '../models/Artist.model.js'
+import Album from '../models/Album.model.js'
+import Song from '../models/Song.model.js'
+import Genre from '../models/Genre.model.js'
+import Mood from '../models/Mood.model.js'
+
 dotenv.config();
 
-await mongoose.connect(process.env.MONGO_URI);
+const raw = JSON.parse(fs.readFileSync('./db.json', 'utf-8'))
 
-const migrate = async () => {
-  const songs = await Song.find({ artistId: { $type: 'string' } });
+const artistMap = {}
+const albumMap  = {}
+const genreMap  = {}
+const moodMap   = {}
 
-  console.log(`🔍 Found ${songs.length} songs to migrate`);
+async function migrate() {
+  await mongoose.connect(process.env.MONGO_URI)
 
-  for (const song of songs) {
-    const artist = await Artist.findOne({ legacyId: song.artistId });
-    const album = await Album.findOne({ legacyId: song.albumId });
-    const genre = await Genre.findOne({ legacyId: song.genreId });
-    const mood = await Mood.findOne({ legacyId: song.moodId });
+  // ❌ clear collections (chỉ chạy khi DEV)
+  await Promise.all([
+    Artist.deleteMany(),
+    Album.deleteMany(),
+    Song.deleteMany(),
+    Genre.deleteMany(),
+    Mood.deleteMany()
+  ])
 
-    if (!artist) {
-      console.log(`❌ Artist not found: ${song.artistId}`);
-      continue;
-    }
-
-    song.legacyId = song.id; // giữ id cũ
-    song.artistId = artist._id;
-    song.albumId = album?._id;
-    song.genreId = genre?._id;
-    song.moodId = mood?._id;
-
-    song.id = undefined; // xoá field cũ
-
-    await song.save();
-    console.log(`✅ Migrated song: ${song.title}`);
+  // =====================
+  // 1️⃣ ARTISTS
+  // =====================
+  for (const a of raw.artists) {
+    const artist = await Artist.create({
+      legacyId: a.id,
+      name: a.name,
+      image: a.img
+    })
+    artistMap[a.id] = artist._id
   }
 
-  console.log('🎉 Migration completed');
-  process.exit(0);
-};
+  // =====================
+  // 2️⃣ GENRES
+  // =====================
+  for (const g of raw.genres) {
+    const genre = await Genre.create({
+      legacyId: g.id,
+      title: g.title,
+      image: g.img
+    })
+    genreMap[g.id] = genre._id
+  }
 
-migrate();
+  // =====================
+  // 3️⃣ MOODS
+  // =====================
+  for (const m of raw.moods) {
+    const mood = await Mood.create({
+      legacyId: m.id,
+      title: m.title,
+      image: m.img
+    })
+    moodMap[m.id] = mood._id
+  }
 
+  // =====================
+  // 4️⃣ ALBUMS
+  // =====================
+  for (const al of raw.albums) {
+    const album = await Album.create({
+      legacyId: al.id,
+      title: al.title,
+      artistId: artistMap[al.artistId],
+      image: al.img
+    })
+    albumMap[al.id] = album._id
+  }
+
+  // =====================
+  // 5️⃣ SONGS
+  // =====================
+  for (const s of raw.songs) {
+    await Song.create({
+      legacyId: s.id,
+      title: s.title,
+      artistId: artistMap[s.artistId],
+      albumId: albumMap[s.albumId],
+      genreId: genreMap[s.genreId],
+      moodId: moodMap[s.moodId],
+      releaseDate: s.releaseDate,
+      duration: s.duration,
+      lyrics: s.lyrics,
+      media: s.media,
+      viewCount: s.viewCount
+    })
+  }
+
+  console.log('✅ MIGRATE SUCCESS')
+  process.exit()
+}
+
+migrate()
