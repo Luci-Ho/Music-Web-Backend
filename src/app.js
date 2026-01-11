@@ -1,25 +1,25 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import morgan from "morgan";
-import path from "path";
-import { fileURLToPath } from "url";
-
-import songRoutes from "./routes/song.routes.js";
-import uploadRoutes from "./routes/upload.route.js";
-import authRoutes from "./routes/auth.routes.js";
-import playlistRoutes from "./routes/playlist.routes.js";
-import likeRoutes from "./routes/like.routes.js";
-import favoritesRoutes from "./routes/favorites.routes.js";
-import genreRoutes from "./routes/genre.routes.js";
-import moodRoutes from "./routes/mood.routes.js";
-import artistRoutes from "./routes/artist.routes.js";
-import albumRoutes from "./routes/album.routes.js";
-
-import logger from "./config/logger.js";
-import errorHandler from "./middlewares/errorHandler.js";
+import express from 'express';
+import cors from 'cors';
+import songRoutes from './routes/song.routes.js';
+import uploadRoutes from './routes/upload.route.js';
+import authRoutes from './routes/auth.routes.js';
+import playlistRoutes from './routes/playlist.routes.js';
+import likeRoutes from './routes/like.routes.js';
+import genreRoutes from './routes/genre.routes.js';
+import moodRoutes from './routes/mood.routes.js';
+import artistRoutes from './routes/artist.routes.js';
+import albumRoutes from './routes/album.routes.js';
+import videoRoutes from './routes/video.routes.js';
+import favoritesRoutes from './routes/favorites.routes.js';
+import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+//import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
+import morgan from 'morgan';
+import logger from './config/logger.js';
+import errorHandler from './middlewares/errorHandler.js';
+import  {getHomeData } from './controllers/home.controller.js';
 
 dotenv.config();
 
@@ -65,28 +65,19 @@ app.use(
 const mediaPath = process.env.MEDIA_PATH || "uploads";
 app.use("/media", express.static(mediaPath));
 
-// ===== API routes =====
-app.use("/api/songs", songRoutes);
-app.use("/api/upload", uploadRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/playlists", playlistRoutes);
-app.use("/api/likes", likeRoutes);
-app.use("/api/favorites", favoritesRoutes);
-app.use("/api/genres", genreRoutes);
-app.use("/api/moods", moodRoutes);
-app.use("/api/artists", artistRoutes);
-app.use("/api/albums", albumRoutes);
-
-// ===== serve React =====
-app.use(express.static(path.join(__dirname, "../public/dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "../public/dist/index.html")
-  );
-});
-
-// ===== error handler (MUST BE LAST) =====
+app.use('/api/songs', songRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/playlists', playlistRoutes);
+app.use('/api/likes', likeRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/genres', genreRoutes);
+app.use('/api/moods', moodRoutes);
+app.use('/api/artists', artistRoutes);
+app.use('/api/albums', albumRoutes);
+// app.use('/api/videos', videoRoutes);
+app.use('/api/home', getHomeData);
+// global error handler (last middleware)
 app.use(errorHandler);
 
 export default app;
