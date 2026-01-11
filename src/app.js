@@ -20,10 +20,14 @@ import morgan from 'morgan';
 import logger from './config/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import  {getHomeData } from './controllers/home.controller.js';
+import { discover } from './controllers/discover.controller.js';
+import addFullImageUrl from './middlewares/addFullImageUrl.js';
 
 dotenv.config();
 
 const app = express();
+
+app.use(addFullImageUrl);
 
 app.use(cors());
 app.use(express.json());
@@ -68,6 +72,10 @@ app.use('/api/moods', moodRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/albums', albumRoutes);
 // app.use('/api/videos', videoRoutes);
+// app.js
+
+app.get("/api/discover", discover);
+
 app.use('/api/home', getHomeData);
 // global error handler (last middleware)
 app.use(errorHandler);
