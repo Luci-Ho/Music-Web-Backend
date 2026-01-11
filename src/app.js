@@ -1,78 +1,92 @@
-import express from 'express';
-import cors from 'cors';
-import songRoutes from './routes/song.routes.js';
-import uploadRoutes from './routes/upload.route.js';
-import authRoutes from './routes/auth.routes.js';
-import playlistRoutes from './routes/playlist.routes.js';
-import likeRoutes from './routes/like.routes.js';
-import genreRoutes from './routes/genre.routes.js';
-import moodRoutes from './routes/mood.routes.js';
-import artistRoutes from './routes/artist.routes.js';
-import albumRoutes from './routes/album.routes.js';
-import videoRoutes from './routes/video.routes.js';
-import favoritesRoutes from './routes/favorites.routes.js';
-import dotenv from 'dotenv';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-//import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
-import morgan from 'morgan';
-import logger from './config/logger.js';
-import errorHandler from './middlewares/errorHandler.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import morgan from "morgan";
+import path from "path";
+import { fileURLToPath } from "url";
+
+import songRoutes from "./routes/song.routes.js";
+import uploadRoutes from "./routes/upload.route.js";
+import authRoutes from "./routes/auth.routes.js";
+import playlistRoutes from "./routes/playlist.routes.js";
+import likeRoutes from "./routes/like.routes.js";
+import favoritesRoutes from "./routes/favorites.routes.js";
+import genreRoutes from "./routes/genre.routes.js";
+import moodRoutes from "./routes/mood.routes.js";
+import artistRoutes from "./routes/artist.routes.js";
+import albumRoutes from "./routes/album.routes.js";
+
+import logger from "./config/logger.js";
+import errorHandler from "./middlewares/errorHandler.js";
 
 dotenv.config();
 
 const app = express();
 
+// ===== path resolve =====
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ===== middlewares =====
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        connectSrc: ["'self'", 'http://localhost:4000', 'http://127.0.0.1:4000'],
+        imgSrc: ["'self'", 'data:', 'https://res.cloudinary.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      },
+    },
+  })
+);
 
-// sanitize
-// app.use(
-//   mongoSanitize({
-//     replaceWith: '_',
-//     allowDots: true,
-//     onSanitize: ({ req, key }) => {
-//       console.warn(`Sanitized key: ${key}`);
-//     },
-//     // 🚨 QUAN TRỌNG
-//     sanitizeQuery: false,
-//   })
-// );
+app.use(
+  morgan("combined", {
+    stream: { write: (msg) => logger.info(msg.trim()) },
+  })
+);
 
-// security headers
-app.use(helmet());
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+  })
+);
 
-// request logging
-app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
+// ===== static uploads =====
+const mediaPath = process.env.MEDIA_PATH || "uploads";
+app.use("/media", express.static(mediaPath));
 
-// rate limiter
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use(limiter);
+// ===== API routes =====
+app.use("/api/songs", songRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/playlists", playlistRoutes);
+app.use("/api/likes", likeRoutes);
+app.use("/api/favorites", favoritesRoutes);
+app.use("/api/genres", genreRoutes);
+app.use("/api/moods", moodRoutes);
+app.use("/api/artists", artistRoutes);
+app.use("/api/albums", albumRoutes);
 
-// app.use(xss());
+// ===== serve React =====
+app.use(express.static(path.join(__dirname, "../public/dist")));
 
-const mediaPath = process.env.MEDIA_PATH || 'uploads';
-app.use('/media', express.static(mediaPath));
-
-app.use('/api/songs', songRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/playlists', playlistRoutes);
-app.use('/api/likes', likeRoutes);
-app.use('/api/favorites', favoritesRoutes);
-app.use('/api/genres', genreRoutes);
-app.use('/api/moods', moodRoutes);
-app.use('/api/artists', artistRoutes);
-app.use('/api/albums', albumRoutes);
-// app.use('/api/videos', videoRoutes);
-
-// global error handler (last middleware)
-app.use(errorHandler);
-
-app.get('/', (req, res) => {
-  res.send('🎵 Melody Music Backend is running');
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../public/dist/index.html")
+  );
 });
+
+// ===== error handler (MUST BE LAST) =====
+app.use(errorHandler);
 
 export default app;
