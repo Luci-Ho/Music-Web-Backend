@@ -55,6 +55,7 @@ const SongSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    
     isFeatured: { type: Boolean, default: false },
 
     viewCount: {

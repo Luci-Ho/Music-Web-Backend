@@ -19,6 +19,7 @@ import xss from 'xss-clean';
 import morgan from 'morgan';
 import logger from './config/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
+import  {getHomeData } from './controllers/home.controller.js';
 
 dotenv.config();
 
@@ -67,7 +68,7 @@ app.use('/api/moods', moodRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/albums', albumRoutes);
 // app.use('/api/videos', videoRoutes);
-
+app.use('/api/home', getHomeData);
 // global error handler (last middleware)
 app.use(errorHandler);
 
