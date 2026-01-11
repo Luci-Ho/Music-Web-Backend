@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const albumSchema = new mongoose.Schema(
-  
   {
      // 🔁 ID cũ từ db.json (s502...)
     legacyId: {
@@ -30,7 +29,7 @@ const albumSchema = new mongoose.Schema(
     ],
 
     img: String,
-  },
+  }},
   { timestamps: true }
 );
 
