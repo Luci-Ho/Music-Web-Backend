@@ -3,7 +3,7 @@ import Song from '../models/Song.model.js';
 
 export const getAllMoods = async (req, res) => {
   try {
-    const moods = await Mood.find().sort({ title: 1 });
+    const moods = await Mood.find().sort({ title: 1 }).lean();
     res.json(moods);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -12,7 +12,7 @@ export const getAllMoods = async (req, res) => {
 
 export const getMoodById = async (req, res) => {
   try {
-    const m = await Mood.findById(req.params.id);
+    const m = await Mood.findById(req.params.id).lean();
     if (!m) return res.status(404).json({ message: 'Mood not found' });
     res.json(m);
   } catch (err) {
@@ -22,9 +22,17 @@ export const getMoodById = async (req, res) => {
 
 export const getSongsByMood = async (req, res) => {
   try {
-    const songs = await Song.find({ mood: req.params.id }).populate('artist album genre mood');
+    const songs = await Song.find({ moodId: req.params.id })
+      .populate('artistId', 'name')
+      .populate('albumId', 'title')
+      .populate('genreId', 'title')
+      .populate('moodId', 'title')
+      .lean();
+
     res.json(songs);
   } catch (err) {
+    console.error('getSongsByMood error:', err);
     res.status(500).json({ message: err.message });
   }
 };
+
