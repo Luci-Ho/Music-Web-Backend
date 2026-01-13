@@ -21,7 +21,7 @@ export const createPlaylist = async (req, res) => {
 
 export const getPlaylist = async (req, res) => {
   try {
-    const playlist = await Playlist.findById(req.params.id).populate('songs ownerId');
+    const playlist = await Playlist.findById(req.params._id).populate('songs ownerId');
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
     res.json(playlist);
   } catch (err) {
@@ -40,7 +40,7 @@ export const getUserPlaylists = async (req, res) => {
 
 export const updatePlaylist = async (req, res) => {
   try {
-    const p = await Playlist.findById(req.params.id);
+    const p = await Playlist.findById(req.params._id);
     if (!p) return res.status(404).json({ message: 'Playlist not found' });
     if (p.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
@@ -55,7 +55,7 @@ export const updatePlaylist = async (req, res) => {
 
 export const deletePlaylist = async (req, res) => {
   try {
-    const p = await Playlist.findById(req.params.id);
+    const p = await Playlist.findById(req.params._id);
     if (!p) return res.status(404).json({ message: 'Playlist not found' });
     if (p.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });

@@ -92,7 +92,7 @@ export const refresh = async (req, res) => {
     if (!token) return res.status(400).json({ message: 'Refresh' });
 
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(payload.id);
+    const user = await User.findById(payload._id);
     if (!user || user.refreshToken !== token) return res.status(401).json({ message: 'không có quyền đăng nhập' });
 
     const accessToken = genAccessToken(user);

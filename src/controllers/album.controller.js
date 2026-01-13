@@ -12,7 +12,7 @@ export const getAllAlbums = async (req, res) => {
 
 export const getAlbumById = async (req, res) => {
   try {
-    const a = await Album.findById(req.params.id).populate('artist songs');
+    const a = await Album.findById(req.params._id).populate('artist songs');
     if (!a) return res.status(404).json({ message: 'Album not found' });
     res.json(a);
   } catch (err) {
@@ -22,7 +22,7 @@ export const getAlbumById = async (req, res) => {
 
 export const getSongsByAlbumId = async (req, res) => {
   try {
-    const songs = await Song.find({ album: req.params.id }).populate('artist album genre mood');
+    const songs = await Song.find({ album: req.params._id }).populate('artist album genre mood');
     res.json(songs);
   } catch (err) {
     res.status(500).json({ message: err.message });

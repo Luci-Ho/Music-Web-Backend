@@ -22,8 +22,8 @@ router.get('/', getAllSongs);
 
 // protected create/update/delete
 // router.post('/', authenticate, createSong);
-// router.patch('/:id', authenticate, updateSong);
-router.delete('/:id', authenticate, deleteSong);
+// router.patch('/:_id', authenticate, updateSong);
+router.delete('/:_id', authenticate, deleteSong);
 
 // GET /api/songs/home
 router.get('/home', getHomeSongs);
@@ -40,7 +40,7 @@ router.get('/year/:year', getSongsByYear);
 router.get('/genre/:genreId', getSongsByGenre);
 
 
-router.get('/:id', getSongById); // 🚨 LUÔN ĐỂ CUỐI
+router.get('/songs/:_id', getSongById); // 🚨 LUÔN ĐỂ CUỐI
 
 
 export default router;

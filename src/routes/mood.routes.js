@@ -4,7 +4,7 @@ import { getAllMoods, getMoodById, getSongsByMood } from '../controllers/mood.co
 const router = express.Router();
 
 router.get('/', getAllMoods);
-router.get('/:id', getMoodById);
-router.get('/:id/songs', getSongsByMood);
+router.get('/:_id', getMoodById);
+router.get('/:_id/songs', getSongsByMood);
 
 export default router;

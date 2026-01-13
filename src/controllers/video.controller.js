@@ -11,7 +11,7 @@ export const getAllVideos = async (req, res) => {
 
 export const getVideoById = async (req, res) => {
   try {
-    const v = await Video.findById(req.params.id).populate('song');
+    const v = await Video.findById(req.params._id).populate('song');
     if (!v) return res.status(404).json({ message: 'Video not found' });
     res.json(v);
   } catch (err) {
