@@ -48,7 +48,9 @@ const SongSchema = new mongoose.Schema(
     media: {
       image: String,
       audioUrl: String,
-      videoUrl: String
+      videoUrl: String,
+
+      videoThumbnail: String
     },
 
     isActive: {

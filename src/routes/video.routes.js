@@ -1,11 +1,13 @@
 // server/src/routes/video.routes.js
 import express from "express";
+import { 
+  getAllVideos,
+  getVideoById
+} from "../controllers/video.controller.js";
 
 const router = express.Router();
 
-// Ví dụ route
-router.get("/", (req, res) => {
-  res.send("Video route working!");
-});
+router.get('/', getAllVideos);
+router.get('/:id', getVideoById);
 
 export default router;

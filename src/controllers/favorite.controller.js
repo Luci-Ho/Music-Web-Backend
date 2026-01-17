@@ -4,6 +4,7 @@ import Song from '../models/Song.model.js';
 export const toggleFavorite = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    
     const { songId } = req.params;
     const song = await Song.findById(songId);
     if (!song) return res.status(404).json({ message: 'Song not found' });
