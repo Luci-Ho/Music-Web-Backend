@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+
 import songRoutes from './routes/song.routes.js';
 import uploadRoutes from './routes/upload.route.js';
 import authRoutes from './routes/auth.routes.js';
@@ -11,6 +12,7 @@ import artistRoutes from './routes/artist.routes.js';
 import albumRoutes from './routes/album.routes.js';
 import videoRoutes from './routes/video.routes.js';
 import favoritesRoutes from './routes/favorites.routes.js';
+
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -74,7 +76,7 @@ app.use('/api/genres', genreRoutes);
 app.use('/api/moods', moodRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/albums', albumRoutes);
-// app.use('/api/videos', videoRoutes);
+app.use('/api/videos', videoRoutes);
 // app.js
 
 app.get("/api/discover", discover);

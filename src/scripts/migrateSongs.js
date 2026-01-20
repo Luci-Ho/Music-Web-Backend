@@ -8,14 +8,17 @@ import Song from '../models/Song.model.js'
 import Genre from '../models/Genre.model.js'
 import Mood from '../models/Mood.model.js'
 
+import { getYoutubeThumbnail } from '../ultils/youtube.js';
+
+
 dotenv.config();
 
 const raw = JSON.parse(fs.readFileSync('./db.json', 'utf-8'))
 
 const artistMap = {}
-const albumMap  = {}
-const genreMap  = {}
-const moodMap   = {}
+const albumMap = {}
+const genreMap = {}
+const moodMap = {}
 
 async function migrate() {
   await mongoose.connect(process.env.MONGO_URI)
@@ -82,18 +85,31 @@ async function migrate() {
   // 5️⃣ SONGS
   // =====================
   for (const s of raw.songs) {
+    const videoThumbnail = getYoutubeThumbnail(s.media?.videoUrl);
+    console.log('VIDEO URL:', s.media?.videoUrl);
+    console.log('THUMB:', videoThumbnail);
+
     await Song.create({
       legacyId: s._id,
       title: s.title,
+
       artistId: artistMap[s.artistId],
-      albumId: albumMap[s.albumId],
-      genreId: genreMap[s.genreId],
-      moodId: moodMap[s.moodId],
+
+      albumId: albumMap[s.albumId] || null,
+      genreId: genreMap[s.genreId] || null,
+      moodId: moodMap[s.moodId] || null,
+
       releaseDate: s.releaseDate,
       duration: s.duration,
       lyrics: s.lyrics,
-      media: s.media,
-      viewCount: s.viewCount
+
+      media: {
+        image: s.media?.image || null,
+        audioUrl: s.media?.audioUrl || null,
+        videoUrl: s.media?.videoUrl || null,
+        videoThumbnail // ✅ LƯU VÀO DB
+      },
+      viewCount: s.viewCount ?? 0
     })
   }
 

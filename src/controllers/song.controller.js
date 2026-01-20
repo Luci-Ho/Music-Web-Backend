@@ -80,24 +80,28 @@ export const getSongById = async (req, res) => {
       ? { _id: id }
       : { legacyId: id };
 
-    const song = await populateSong(
-      Song.findOneAndUpdate(
+    const song = await Song
+      .findOneAndUpdate(
         filter,
         { $inc: { viewCount: 1 } },
         { new: true }
       )
-    );
+      .populate('artistId', 'name image')
+      .populate('albumId', 'title image artistId')
+      .populate('genreId', 'title')
+      .populate('moodId', 'title')
+      .lean(); // ✅ chỉ lấy plain object
 
     if (!song) {
       return res.status(404).json({ message: 'Song not found' });
     }
 
     res.json(song);
-  } catch {
-    res.status(500).json({ message: 'Failed to fetch song' });
+  } catch (err) {
+    console.error('❌ getSongById error:', err);
+    res.status(500).json({ message: err.message });
   }
 };
-
 
 /**
  * GET /api/songs/genre/:genre
@@ -222,8 +226,8 @@ export const getNewestSongs = async (req, res) => {
 
     const songs = await populateSong(
       Song.find({ isActive: true })
-      .sort({ releaseDate: -1 })
-      .limit(limit)
+        .sort({ releaseDate: -1 })
+        .limit(limit)
     );
 
     res.json(songs);
