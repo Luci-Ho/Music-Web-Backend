@@ -8,8 +8,7 @@ import Song from '../models/Song.model.js'
 import Genre from '../models/Genre.model.js'
 import Mood from '../models/Mood.model.js'
 
-import { getYoutubeThumbnail } from '../ultils/youtube.js';
-
+import { getYoutubeThumbnail } from '../utils/youtube.js';
 
 dotenv.config();
 
@@ -41,7 +40,10 @@ async function migrate() {
       name: a.name,
       image: a.img
     })
-    artistMap[a.id] = artist._id
+    artistMap[a.id] = {
+      _id: artist._id,
+      name: artist.name
+    }
   }
 
   // =====================
@@ -72,10 +74,12 @@ async function migrate() {
   // 4️⃣ ALBUMS
   // =====================
   for (const al of raw.albums) {
+    const artist = artistMap[al.artistId];
+
     const album = await Album.create({
       legacyId: al.id,
       title: al.title,
-      artistId: artistMap[al.artistId],
+      artistId: artist?._id || null,
       image: al.img
     })
     albumMap[al.id] = album._id
@@ -89,11 +93,18 @@ async function migrate() {
     console.log('VIDEO URL:', s.media?.videoUrl);
     console.log('THUMB:', videoThumbnail);
 
+    const artist = artistMap[s.artistId];
+    if (!artist) {
+      console.warn('❌ Artist not found for song:', s.title);
+      continue;
+    }
+
     await Song.create({
       legacyId: s.id,
       title: s.title,
 
-      artistId: artistMap[s.artistId],
+      artistId: artist._id,
+      artistName: artist.name,
 
       albumId: albumMap[s.albumId] || null,
       genreId: genreMap[s.genreId] || null,
