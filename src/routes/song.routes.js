@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import {
   getAllSongs,
   getFeaturedSongs,
@@ -6,41 +6,36 @@ import {
   getSongsByGenre,
   searchSongs,
   getTopSongs,
-  getSongsByYear ,
+  getSongsByYear,
   getSongsByArtist,
   getHomeSongs,
   getNewestSongs,
   createSong,
   updateSong,
   deleteSong,
-} from '../controllers/song.controller.js';
-import { authenticate } from '../middlewares/auth.js';
+} from "../controllers/song.controller.js";
+
+import { authenticate } from "../middlewares/auth.js";
 
 const router = express.Router();
-//không thay đổi thứ tự route, tips: route cụ thể phải TRƯỚc route động
-router.get('/', getAllSongs);
 
-// protected create/update/delete
-// router.post('/', authenticate, createSong);
-// router.patch('/:_id', authenticate, updateSong);
-router.delete('/:_id', authenticate, deleteSong);
+// PUBLIC
+router.get("/", getAllSongs);
+router.get("/home", getHomeSongs);
+router.get("/new", getNewestSongs);
+router.get("/artist/:artistId", getSongsByArtist);
+router.get("/featured", getFeaturedSongs);
+router.get("/top", getTopSongs);
+router.get("/search", searchSongs);
+router.get("/year/:year", getSongsByYear);
+router.get("/genre/:genreId", getSongsByGenre);
 
-// GET /api/songs/home
-router.get('/home', getHomeSongs);
-router.get('/new', getNewestSongs);
+// ✅ ADMIN (bật lại)
+router.post("/", authenticate, createSong);
+router.patch("/:_id", authenticate, updateSong);
+router.delete("/:_id", authenticate, deleteSong);
 
-router.get('/artist/:artistId', getSongsByArtist);
-
-
-router.get('/featured', getFeaturedSongs);
-router.get('/top', getTopSongs);
-router.get('/search', searchSongs);
-
-router.get('/year/:year', getSongsByYear);
-router.get('/genre/:genreId', getSongsByGenre);
-
-
-router.get('/songs/:_id', getSongById); // 🚨 LUÔN ĐỂ CUỐI
-
+// ✅ GET BY ID (luôn để cuối)
+router.get("/:_id", getSongById);
 
 export default router;

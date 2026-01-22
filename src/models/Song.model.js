@@ -4,9 +4,10 @@ const SongSchema = new mongoose.Schema(
   {
     legacyId: {
       type: String,
-      required: true,
+      required: false,
       index: true,
-      unique: true
+      unique: true,
+      default: undefined
     },
 
     title: {
