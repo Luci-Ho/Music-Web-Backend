@@ -4,6 +4,7 @@ import User from '../models/User.model.js';
 //check json web token
 export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
+  console.log('AUTH HEADER:', req.headers.authorization);
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
@@ -28,7 +29,13 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    req.user = user;
+    req.user = {
+      id: user._id,
+      role: user.role,
+      email: user.email,
+    };
+
+
     next();
   } catch (err) {
     return res.status(401).json({
@@ -57,3 +64,29 @@ export const authorizeRole = (roles = []) => (req, res, next) => {
 };
 
 export default { authenticate, authorizeRole };
+
+export const authenticateOptional = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+      if (payload?.id) {
+        const user = await User.findById(payload.id).select('-password');
+        req.user = user || null;
+      } else {
+        req.user = null;
+      }
+    } catch (err) {
+      req.user = null;
+    }
+  } else {
+    req.user = null;
+  }
+
+  next();
+};
+
+//middleware cho user chưa đăng nhập vẫn xem được home page

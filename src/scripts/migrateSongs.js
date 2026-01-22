@@ -38,7 +38,7 @@ async function migrate() {
     const artist = await Artist.create({
       legacyId: a.id,
       name: a.name,
-      image: a.img
+      img: a.img
     })
     artistMap[a.id] = {
       _id: artist._id,
@@ -53,7 +53,7 @@ async function migrate() {
     const genre = await Genre.create({
       legacyId: g.id,
       title: g.title,
-      image: g.img
+      img: g.img
     })
     genreMap[g.id] = genre._id
   }
@@ -65,7 +65,7 @@ async function migrate() {
     const mood = await Mood.create({
       legacyId: m.id,
       title: m.title,
-      image: m.img
+      img: m.img
     })
     moodMap[m.id] = mood._id
   }
@@ -80,7 +80,7 @@ async function migrate() {
       legacyId: al.id,
       title: al.title,
       artistId: artist?._id || null,
-      image: al.img
+      img: al.img
     })
     albumMap[al.id] = album._id
   }
@@ -90,8 +90,7 @@ async function migrate() {
   // =====================
   for (const s of raw.songs) {
     const videoThumbnail = getYoutubeThumbnail(s.media?.videoUrl);
-    console.log('VIDEO URL:', s.media?.videoUrl);
-    console.log('THUMB:', videoThumbnail);
+   
 
     const artist = artistMap[s.artistId];
     if (!artist) {

@@ -14,12 +14,16 @@ import { createPlaylistSchema, updatePlaylistSchema } from '../validation/playli
 
 const router = express.Router();
 
-router.post('/', authenticate, validate(createPlaylistSchema), createPlaylist);
+
 router.get('/me', authenticate, getUserPlaylists);
 router.get('/:id', getPlaylist);
+
 router.patch('/:id', authenticate, validate(updatePlaylistSchema), updatePlaylist);
-router.delete('/:id', authenticate, deletePlaylist);
+
+router.post('/', authenticate, validate(createPlaylistSchema), createPlaylist);
 router.post('/:id/songs', authenticate, addSongToPlaylist);
-router.delete('/:id/songs', authenticate, removeSongFromPlaylist);
+
+router.delete('/:id', authenticate, deletePlaylist);
+router.delete('/:id/songs/:songId', authenticate, removeSongFromPlaylist);
 
 export default router;

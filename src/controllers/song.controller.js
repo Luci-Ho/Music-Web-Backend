@@ -113,6 +113,7 @@ export const getSongById = async (req, res) => {
 export const getSongsByGenre = async (req, res) => {
   try {
     const { genre } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(genre)) {
       return res.status(400).json({ message: 'Invalid genre id' });
     }
@@ -354,4 +355,5 @@ export const deleteSong = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 

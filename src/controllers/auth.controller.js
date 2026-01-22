@@ -14,7 +14,6 @@ const genRefreshToken = (user) =>
   });
 
 
-
 export const signup = async (req, res) => {
   try {
     const { username, email, password, phone } = req.body;
@@ -67,42 +66,80 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Sai Email hoặc mật khẩu' });
 
     const user = await User.findOne({ email }).select('+password');
-    if (!user) return res.status(401).json({ message: 'Sai Email hoặc mật khẩu' });
+    if (!user) {
+      return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
+    }
 
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(401).json({ message: 'Sai Email hoặc mật khẩu' });
+    if (!ok) {
+      return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
+    }
 
     const accessToken = genAccessToken(user);
     const refreshToken = genRefreshToken(user);
+
+    // ✅ LƯU refresh token vào DB
     user.refreshToken = refreshToken;
     await user.save();
 
-    res.json({ accessToken, refreshToken, user: { id: user._id, email: user.email, username: user.username } });
+    // ✅ TRẢ RESPONSE
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+      },
+      accessToken,
+      refreshToken, // FE dùng localStorage 
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+
+// controllers/auth.controller.js
 export const refresh = async (req, res) => {
   try {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ message: 'Refresh' });
+    const { refreshToken } = req.body;
 
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Thiếu refresh token' });
+    }
+
+    const payload = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
     const user = await User.findById(payload.id);
-    if (!user || user.refreshToken !== token) return res.status(401).json({ message: 'không có quyền đăng nhập' });
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ message: 'Refresh token không hợp lệ' });
+    }
 
-    const accessToken = genAccessToken(user);
-    res.json({ accessToken });
+    const newAccessToken = genAccessToken(user);
+
+    res.json({ accessToken: newAccessToken });
+
   } catch (err) {
-    res.status(401).json({ message: 'không có quyền đăng nhập' });
+    res.status(401).json({ message: 'Refresh token hết hạn' });
   }
 };
+
 
 export const me = async (req, res) => {
   const user = req.user;
   res.json({ id: user._id, email: user.email, username: user.username, role: user.role });
 };
+
+export const getMyFavorites = async (req, res) => {
+  const user = await User.findById(req.user.id)
+    .populate('favorites')
+
+  res.json(user.favorites)
+}
+
+
