@@ -115,7 +115,7 @@ export const refresh = async (req, res) => {
       process.env.JWT_REFRESH_SECRET
     );
 
-    const user = await User.findById(payload.id);
+    const user = await User.findById(payload._id);
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(401).json({ message: 'Refresh token không hợp lệ' });
     }

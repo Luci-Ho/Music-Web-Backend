@@ -12,7 +12,7 @@ export const getAllGenres = async (req, res) => {
 
 export const getGenreById = async (req, res) => {
   try {
-    const g = await Genre.findById(req.params.id).lean();
+    const g = await Genre.findById(req.params._id).lean();
 
     if (!g) {
       return res.status(404).json({ message: 'Genre not found' });
@@ -28,7 +28,7 @@ export const getGenreById = async (req, res) => {
 
 export const getSongsByGenre = async (req, res) => {
   try {
-    const songs = await Song.find({ genreId: req.params.id })
+    const songs = await Song.find({ genreId: req.params._id })
       .populate('artistId', 'name')
       .populate('albumId', 'title')
       .populate('genreId', 'title')

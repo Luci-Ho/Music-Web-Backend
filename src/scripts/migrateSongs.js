@@ -36,7 +36,7 @@ async function migrate() {
   // =====================
   for (const a of raw.artists) {
     const artist = await Artist.create({
-      legacyId: a.id,
+      legacyId: a._id,
       name: a.name,
       img: a.img
     })
@@ -51,11 +51,11 @@ async function migrate() {
   // =====================
   for (const g of raw.genres) {
     const genre = await Genre.create({
-      legacyId: g.id,
+      legacyId: g._id,
       title: g.title,
       img: g.img
     })
-    genreMap[g.id] = genre._id
+    genreMap[g._id] = genre._id
   }
 
   // =====================
@@ -63,11 +63,11 @@ async function migrate() {
   // =====================
   for (const m of raw.moods) {
     const mood = await Mood.create({
-      legacyId: m.id,
+      legacyId: m._id,
       title: m.title,
       img: m.img
     })
-    moodMap[m.id] = mood._id
+    moodMap[m._id] = mood._id
   }
 
   // =====================
@@ -77,12 +77,12 @@ async function migrate() {
     const artist = artistMap[al.artistId];
 
     const album = await Album.create({
-      legacyId: al.id,
+      legacyId: al._id,
       title: al.title,
       artistId: artist?._id || null,
       img: al.img
     })
-    albumMap[al.id] = album._id
+    albumMap[al._id] = album._id
   }
 
   // =====================
@@ -99,7 +99,7 @@ async function migrate() {
     }
 
     await Song.create({
-      legacyId: s.id,
+      legacyId: s._id,
       title: s.title,
 
       artistId: artist._id,

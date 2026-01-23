@@ -12,6 +12,7 @@ import artistRoutes from './routes/artist.routes.js';
 import albumRoutes from './routes/album.routes.js';
 import videoRoutes from './routes/video.routes.js';
 import favoritesRoutes from './routes/favorites.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 import dotenv from 'dotenv';
 import helmet from 'helmet';
@@ -34,34 +35,37 @@ app.use(addFullImageUrl);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        connectSrc: ["'self'", 'http://localhost:4000', 'http://127.0.0.1:4000'],
+        imgSrc: ["'self'", 'data:', 'https://res.cloudinary.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      },
+    },
+  })
+);
 
-// sanitize
-// app.use(
-//   mongoSanitize({
-//     replaceWith: '_',
-//     allowDots: true,
-//     onSanitize: ({ req, key }) => {
-//       console.warn(`Sanitized key: ${key}`);
-//     },
-//     // 🚨 QUAN TRỌNG
-//     sanitizeQuery: false,
-//   })
-// );
+app.use(
+  morgan("combined", {
+    stream: { write: (msg) => logger.info(msg.trim()) },
+  })
+);
 
-// security headers
-app.use(helmet());
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
+  })
+);
 
-// request logging
-app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
-
-// rate limiter
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use(limiter);
-
-// app.use(xss());
-
-const mediaPath = process.env.MEDIA_PATH || 'uploads';
-app.use('/media', express.static(mediaPath));
+// ===== static uploads =====
+const mediaPath = process.env.MEDIA_PATH || "uploads";
+app.use("/media", express.static(mediaPath));
 
 app.use('/api/songs', songRoutes);
 app.use('/api/upload', uploadRoutes);
@@ -74,6 +78,7 @@ app.use('/api/moods', moodRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/albums', albumRoutes);
 app.use('/api/videos', videoRoutes);
+app.use("/api/users", userRoutes);
 // app.js
 
 app.get("/api/discover", discover);
@@ -81,9 +86,5 @@ app.get("/api/discover", discover);
 app.use('/api/home', getHomeData);
 // global error handler (last middleware)
 app.use(errorHandler);
-
-app.get('/', (req, res) => {
-  res.send('🎵 Melody Music Backend is running');
-});
 
 export default app;

@@ -16,13 +16,13 @@ export const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!payload?.id) {
+    if (!payload?._id) {
       return res.status(401).json({
         message: 'Token không hợp lệ'
       });
     }
 
-    const user = await User.findById(payload.id).select('-password');
+    const user = await User.findById(payload._id).select('-password');
     if (!user) {
       return res.status(401).json({
         message: 'Tài khoản không tồn tại'

@@ -4,7 +4,7 @@ import { getAllGenres, getGenreById, getSongsByGenre } from '../controllers/genr
 const router = express.Router();
 
 router.get('/', getAllGenres);
-router.get('/:id', getGenreById);
-router.get('/:id/songs', getSongsByGenre);
+router.get('/:_id', getGenreById);
+router.get('/:_id/songs', getSongsByGenre);
 
 export default router;

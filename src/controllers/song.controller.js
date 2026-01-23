@@ -71,7 +71,7 @@ export const getFeaturedSongs = async (req, res) => {
 };
 
 /**
- * GET /api/songs/:id
+ * GET /api/songs/:_id
  * Lấy chi tiết 1 bài hát
  */
 export const getSongById = async (req, res) => {
@@ -306,7 +306,7 @@ export const createSong = async (req, res) => {
 };
 
 /**
- * PATCH /api/songs/:id
+ * PATCH /api/songs/:_id
  * Cập nhật bài hát
  */
 export const updateSong = async (req, res) => {
@@ -337,7 +337,7 @@ export const updateSong = async (req, res) => {
 };
 
 /**
- * DELETE /api/songs/:id
+ * DELETE /api/songs/:_id
  */
 export const deleteSong = async (req, res) => {
   try {

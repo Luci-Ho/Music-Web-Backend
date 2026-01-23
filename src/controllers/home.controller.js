@@ -3,7 +3,7 @@ import Artist from '../models/Artist.model.js';
 
 export const getHomeData = async (req, res) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?._id;
         const songPopulate = {
             path: 'artistId',
             select: 'name'

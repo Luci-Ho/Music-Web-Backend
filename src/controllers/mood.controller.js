@@ -12,7 +12,7 @@ export const getAllMoods = async (req, res) => {
 
 export const getMoodById = async (req, res) => {
   try {
-    const m = await Mood.findById(req.params.id).lean();
+    const m = await Mood.findById(req.params._id).lean();
     if (!m) return res.status(404).json({ message: 'Mood not found' });
     res.json(m);
   } catch (err) {
@@ -22,7 +22,7 @@ export const getMoodById = async (req, res) => {
 
 export const getSongsByMood = async (req, res) => {
   try {
-    const songs = await Song.find({ moodId: req.params.id })
+    const songs = await Song.find({ moodId: req.params._id })
       .populate('artistId', 'name')
       .populate('albumId', 'title')
       .populate('genreId', 'title')

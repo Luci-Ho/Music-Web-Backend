@@ -16,7 +16,7 @@ export const getAllArtists = async (req, res) => {
 // Lấy chi tiết artist theo id
 export const getArtistById = async (req, res) => {
   try {
-    const artist = await Artist.findById(req.params.id).lean();
+    const artist = await Artist.findById(req.params._id).lean();
     if (!artist) {
       return res.status(404).json({ message: 'Artist not found' });
     }
@@ -30,7 +30,7 @@ export const getArtistById = async (req, res) => {
 // Lấy danh sách bài hát theo artistId
 export const getSongsByArtistId = async (req, res) => {
   try {
-    const songs = await Song.find({ artistId: req.params.id })
+    const songs = await Song.find({ artistId: req.params._id })
       .populate("artistId", "name img")
       .populate("albumId", "title img")
       .populate("genreId", "title img")
