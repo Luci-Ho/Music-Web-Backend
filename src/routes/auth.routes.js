@@ -1,12 +1,17 @@
 import express from 'express';
-import { signup, login, refresh, me } from '../controllers/auth.controller.js';
+import { signup, login, refresh, me,} from '../controllers/auth.controller.js';
 import { authenticate } from '../middlewares/auth.js';
+import validate from '../middlewares/validate.js';
+import { signupSchema, loginSchema, } from '../validation/auth.schema.js';
 
 const router = express.Router();
 
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/refresh', refresh);
+
 router.get('/me', authenticate, me);
+
+
 
 export default router;

@@ -8,8 +8,7 @@ import Song from '../models/Song.model.js'
 import Genre from '../models/Genre.model.js'
 import Mood from '../models/Mood.model.js'
 
-import { getYoutubeThumbnail } from '../ultils/youtube.js';
-
+import { getYoutubeThumbnail } from '../utils/youtube.js';
 
 dotenv.config();
 
@@ -39,9 +38,12 @@ async function migrate() {
     const artist = await Artist.create({
       legacyId: a._id,
       name: a.name,
-      image: a.img
+      img: a.img
     })
-    artistMap[a._id] = artist._id
+    artistMap[a.id] = {
+      _id: artist._id,
+      name: artist.name
+    }
   }
 
   // =====================
@@ -51,7 +53,7 @@ async function migrate() {
     const genre = await Genre.create({
       legacyId: g._id,
       title: g.title,
-      image: g.img
+      img: g.img
     })
     genreMap[g._id] = genre._id
   }
@@ -63,7 +65,7 @@ async function migrate() {
     const mood = await Mood.create({
       legacyId: m._id,
       title: m.title,
-      image: m.img
+      img: m.img
     })
     moodMap[m._id] = mood._id
   }
@@ -72,11 +74,13 @@ async function migrate() {
   // 4️⃣ ALBUMS
   // =====================
   for (const al of raw.albums) {
+    const artist = artistMap[al.artistId];
+
     const album = await Album.create({
       legacyId: al._id,
       title: al.title,
-      artistId: artistMap[al.artistId],
-      image: al.img
+      artistId: artist?._id || null,
+      img: al.img
     })
     albumMap[al._id] = album._id
   }
@@ -86,14 +90,20 @@ async function migrate() {
   // =====================
   for (const s of raw.songs) {
     const videoThumbnail = getYoutubeThumbnail(s.media?.videoUrl);
-    console.log('VIDEO URL:', s.media?.videoUrl);
-    console.log('THUMB:', videoThumbnail);
+   
+
+    const artist = artistMap[s.artistId];
+    if (!artist) {
+      console.warn('❌ Artist not found for song:', s.title);
+      continue;
+    }
 
     await Song.create({
       legacyId: s._id,
       title: s.title,
 
-      artistId: artistMap[s.artistId],
+      artistId: artist._id,
+      artistName: artist.name,
 
       albumId: albumMap[s.albumId] || null,
       genreId: genreMap[s.genreId] || null,

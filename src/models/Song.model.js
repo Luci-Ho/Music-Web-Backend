@@ -1,4 +1,5 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
+import { removeVietnameseTones } from '../utils/removeVietnameseTones.js';
 
 const SongSchema = new mongoose.Schema(
   {
@@ -15,10 +16,25 @@ const SongSchema = new mongoose.Schema(
       required: true
     },
 
+    titleNoAccent: {
+      type: String,
+      index: true,
+    },
+
     artistId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Artist',
       required: true
+    },
+
+    artistName: {
+      type: String,
+      required: true
+    },
+
+    artistNameNoAccent: {
+      type: String,
+      index: true
     },
 
     albumId: {
@@ -58,16 +74,27 @@ const SongSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
-    
+
     isFeatured: { type: Boolean, default: false },
 
     viewCount: {
       type: Number,
       default: 0
-    }
+    },
   },
 
   { timestamps: true }
-)
+);
+
+SongSchema.pre('save', function (next) {
+  if (this.isModified('title')) {
+    this.titleNoAccent = removeVietnameseTones(this.title)
+  }
+
+  if (this.isModified('artistName')) {
+    this.artistNameNoAccent = removeVietnameseTones(this.artistName)
+  }
+})
+
 
 export default mongoose.model('Song', SongSchema)

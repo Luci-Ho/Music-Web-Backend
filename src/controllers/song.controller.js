@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 import Song from '../models/Song.model.js';
 import Artist from '../models/Artist.model.js';
 import Genre from '../models/Genre.model.js';
-import { populateSong } from '../ultils/populateSong.js';
+import { populateSong } from '../utils/populateSong.js';
+
+import { removeVietnameseTones } from '../utils/removeVietnameseTones.js';
 
 /**
  * GET /api/songs
@@ -111,6 +113,7 @@ export const getSongById = async (req, res) => {
 export const getSongsByGenre = async (req, res) => {
   try {
     const { genre } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(genre)) {
       return res.status(400).json({ message: 'Invalid genre id' });
     }
@@ -133,26 +136,37 @@ export const searchSongs = async (req, res) => {
     const q = req.query.q?.trim();
     if (!q) return res.json([]);
 
+    const keyword = removeVietnameseTones(q);
+
+    // 1️⃣ Tìm artist phù hợp (có dấu + không dấu)
     const artists = await Artist.find({
-      name: { $regex: q, $options: 'i' },
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { nameNoAccent: { $regex: keyword, $options: 'i' } },
+      ],
     }).select('_id');
 
-    const songs = await populateSong(
-      Song.find({
-        isActive: true,
-        $or: [
-          { title: { $regex: q, $options: 'i' } },
-          { artistId: { $in: artists.map(a => a._id) } },
-        ],
-      }).limit(30)
-    );
+    const artistIds = artists.map(a => a._id);
+
+    // 2️⃣ Tìm bài hát
+    const songs = await Song.find({
+      isActive: true,
+      $or: [
+        { title: { $regex: q, $options: 'i' } },
+        { titleNoAccent: { $regex: keyword, $options: 'i' } },
+        { artistId: { $in: artistIds } },
+      ],
+    })
+      .populate('artistId', 'name')
+      .limit(30)
+      .lean();
 
     res.json(songs);
-  } catch {
+  } catch (err) {
+    console.error('❌ Search failed:', err);
     res.status(500).json({ message: 'Search failed' });
   }
 };
-
 
 /**
  * GET /api/songs/top
@@ -341,4 +355,5 @@ export const deleteSong = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 

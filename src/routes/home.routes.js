@@ -1,6 +1,6 @@
 import express from 'express';
 import { getHomeData } from '../controllers/home.controller.js';
-import { authenticateOptional } from '../middleware/authenticate.js';
+import { authenticateOptional } from '../middlewares/auth.js';
 
 const router = express.Router();
 

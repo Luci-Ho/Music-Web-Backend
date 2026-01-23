@@ -47,16 +47,14 @@ const userSchema = new mongoose.Schema(
     favorites: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Song",
-        default: []
+        ref: "Song"
       },
     ],
 
     playlists: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Playlist",
-        default: []
+        ref: "Playlist"
       },
     ],
 
